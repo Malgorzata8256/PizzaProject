@@ -1,3 +1,13 @@
+## Counting value of sold pizzas
+```sql
+SELECT od.pizza_id,
+       od.quantity,
+       p.price,
+       od.quantity * p.price AS sales_value
+FROM orderdetails od 
+LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id;
+
+
 # PizzaProject
 
 --
