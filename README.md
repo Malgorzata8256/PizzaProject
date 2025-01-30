@@ -101,19 +101,18 @@ SQL Queries
 ## counting value of sold pizzas
 ```sql
 SELECT od.pizza_id,
-		od.quantity,
-		p.price,
-		od.quantity * p.price AS sales_value
+       od.quantity,
+       p.price,
+       od.quantity * p.price AS sales_value
 FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id;
 ```
 
 ## verification which pizza size is the most popular (by number of order units) and % share
 ```sql
 
-SELECT  
-    p.size,
-    SUM(od.quantity) AS pizza_by_size,
-    ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_size
+SELECT p.size,
+       SUM(od.quantity) AS pizza_by_size,
+       ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_size
 FROM orderdetails od 
 LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 GROUP BY p.size
@@ -124,8 +123,8 @@ ORDER BY pizza_by_size DESC;
 ```sql
 
 SELECT  pt.category,
-		SUM(od.quantity) AS pizza_by_category,
-		ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_category
+        SUM(od.quantity) AS pizza_by_category,
+        ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_category
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 GROUP BY pt.category
@@ -136,8 +135,8 @@ ORDER BY pizza_by_category DESC;
 ```sql
 
 SELECT  pt.name,
-		SUM(od.quantity) AS pizza_by_name,
-		ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_name
+        SUM(od.quantity) AS pizza_by_name,
+        OUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_name
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 GROUP BY pt.name
@@ -149,8 +148,8 @@ ORDER BY pizza_by_name DESC;
 WITH CTE AS
 		(
 		SELECT  pt.name,
-				pt.category,
-				SUM(od.quantity) OVER (PARTITION BY pt.name, pt.category) AS best_pizza_by_category
+			pt.category,
+			SUM(od.quantity) OVER (PARTITION BY pt.name, pt.category) AS best_pizza_by_category
 		FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 			LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 		),
@@ -158,14 +157,14 @@ WITH CTE AS
 	CTE2 AS
 		(
 		SELECT  name,
-				category, 
-				best_pizza_by_category,
-				DENSE_RANK() OVER (PARTITION BY category ORDER BY best_pizza_by_category DESC ) AS ranking_by_category
+			category, 
+			best_pizza_by_category,
+			DENSE_RANK() OVER (PARTITION BY category ORDER BY best_pizza_by_category DESC ) AS ranking_by_category
 		FROM CTE
 		)
 SELECT DISTINCT(name),
-		category, 
-		best_pizza_by_category
+	category, 
+	best_pizza_by_category
 FROM CTE2
 WHERE ranking_by_category =1;
 ```
@@ -175,23 +174,23 @@ WHERE ranking_by_category =1;
 WITH CTE AS
 		(
 		SELECT  distinct(pt.name),
-				p.size,
-				SUM(od.quantity) OVER (PARTITION BY pt.name, p.size) AS best_pizza_by_size
+			p.size,
+			SUM(od.quantity) OVER (PARTITION BY pt.name, p.size) AS best_pizza_by_size
 		FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 			LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 		),
 	CTE2 AS 
 		(
 		SELECT  name,
-				size, 
-				best_pizza_by_size,
+			size, 
+			best_pizza_by_size,
 		DENSE_RANK() OVER (PARTITION BY size ORDER BY best_pizza_by_size DESC ) AS ranking_by_size
 		FROM CTE
 		)
 		
 SELECT  DISTINCT(name),
-		size, 
-		best_pizza_by_size
+	size,
+	best_pizza_by_size
 FROM CTE2
 WHERE ranking_by_size = 1;
 ```
@@ -201,9 +200,8 @@ WHERE ranking_by_size = 1;
 
 SELECT o.date, 
        SUM(od.quantity * p.price) AS daily_sales
-FROM orderdetails od 
-LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id
-LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id
+	LEFT JOIN orders o ON o.order_id = od.order_id
 GROUP BY o.date
 ORDER BY o.date;
 ```
@@ -223,7 +221,7 @@ ORDER BY order_count DESC;
 ```sql
 
 SELECT DISTINCT (TO_CHAR (o.date, 'MM')) AS month,
-		SUM(od.quantity * p.price) OVER (PARTITION BY TO_CHAR (o.date, 'MM'))  AS sales_value_by_month
+	SUM(od.quantity * p.price) OVER (PARTITION BY TO_CHAR (o.date, 'MM'))  AS sales_value_by_month
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 ORDER BY month ;
@@ -233,7 +231,7 @@ ORDER BY month ;
 ```sql
 
 SELECT DISTINCT (TO_CHAR (o.date, 'Q')) AS quarter,
-		SUM(od.quantity * p.price) OVER (PARTITION BY TO_CHAR (o.date, 'Q'))  AS sales_value_by_quarter
+	SUM(od.quantity * p.price) OVER (PARTITION BY TO_CHAR (o.date, 'Q'))  AS sales_value_by_quarter
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 ORDER BY quarter ;
@@ -246,8 +244,8 @@ SELECT  CASE WHEN o.time BETWEEN '07:00:01' AND '12:00:00' THEN 'MORNING'
 		WHEN o.time BETWEEN '12:00:01' AND '18:00:00' THEN 'AFTERNOON'
 		WHEN o.time BETWEEN '18:00:01' AND '23:59:59' THEN 'EVENING'
 		ELSE 'OTHER' END AS time_buckets,
-		COUNT(od.quantity),
-		ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_bucket
+	COUNT(od.quantity),
+	ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_bucket
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 GROUP BY time_buckets;
@@ -264,7 +262,7 @@ FROM orderdetails;
 ```sql
 
 SELECT DISTINCT (TO_CHAR (o.date, 'MM')) AS month,
-		SUM(od.quantity) OVER (PARTITION BY TO_CHAR (o.date, 'MM'))  AS number_of_pizzas_monthly
+	SUM(od.quantity) OVER (PARTITION BY TO_CHAR (o.date, 'MM'))  AS number_of_pizzas_monthly
 FROM orderdetails od LEFT JOIN orders o ON o.order_id = od.order_id
 ORDER BY month ;
 ```
@@ -273,7 +271,7 @@ ORDER BY month ;
 ```sql
 
 SELECT DISTINCT (TO_CHAR (o.date, 'Q')) AS quarter,
-		SUM(od.quantity) OVER (PARTITION BY TO_CHAR (o.date, 'Q'))  AS number_of_pizzas_quaterly
+	SUM(od.quantity) OVER (PARTITION BY TO_CHAR (o.date, 'Q'))  AS number_of_pizzas_quaterly
 FROM orderdetails od LEFT JOIN orders o ON o.order_id = od.order_id
 ORDER BY quarter ;
 ```
@@ -290,7 +288,7 @@ FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id
 ```sql
 
 SELECT  TO_CHAR (o.date, 'MM') as month,
-		ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_monthly
+	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_monthly
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 GROUP BY month
@@ -301,7 +299,7 @@ ORDER BY month;
 ```sql
 
 SELECT  TO_CHAR (o.date, 'Q') as quarter,
-		ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_quaterly
+	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_quaterly
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 GROUP BY quarter
@@ -315,7 +313,7 @@ SELECT  CASE WHEN o.time BETWEEN '07:00:01' AND '12:00:00' THEN 'MORNING'
 		WHEN o.time BETWEEN '12:00:01' AND '18:00:00' THEN 'AFTERNOON'
 		WHEN o.time BETWEEN '18:00:01' AND '23:59:59' THEN 'EVENING'
 		ELSE 'OTHER' END AS time_buckets,
-		ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_time_buckets
+	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_time_buckets
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 GROUP BY time_buckets;
@@ -325,7 +323,7 @@ GROUP BY time_buckets;
 ```sql
 
 SELECT  EXTRACT(HOUR FROM o.time) as hour,
-		ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_hourly
+	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_hourly
 FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 	LEFT JOIN orders o ON o.order_id = od.order_id
 GROUP BY hour
@@ -335,10 +333,11 @@ ORDER BY hour;
 ## avg number of pizzas in order
 ```sql
 
-SELECT ROUND ( AVG (order_size),2)
+SELECT ROUND(AVG(order_size),2)
 FROM
-		(SELECT order_id,
-				SUM(quantity) AS order_size
+		(
+		SELECT order_id,
+			SUM(quantity) AS order_size
 		 FROM orderdetails
 		 GROUP BY order_id
 		) AS sub;
@@ -350,8 +349,8 @@ FROM
 SELECT a.pizza_id AS pizza_1, 
        b.pizza_id AS pizza_2, 
        COUNT(*) AS pair_count
-FROM orderdetails a
-JOIN orderdetails b ON a.order_id = b.order_id AND a.pizza_id < b.pizza_id
+FROM orderdetails a JOIN orderdetails b ON a.order_id = b.order_id
+					AND a.pizza_id < b.pizza_id
 GROUP BY pizza_1, pizza_2
 ORDER BY pair_count DESC
 LIMIT 10;
