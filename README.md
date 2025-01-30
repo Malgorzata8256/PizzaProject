@@ -37,6 +37,83 @@ I created database through PgAdmin, created tables and imported all files (CSV) 
 			i. Formatting (daty, czas, itp. Formatowanie) - I created tables in PgAdmin, formatting is correct and in CSV files it was also correct)
 			ii. Consisciency (np. US --> USA wszędzie)  - data in all tables in consistent
 			iii. Duplicates - there are no duplicates
+
+## Data cleaning process
+
+-- The process includes:
+-- 1. Checking for duplicate records in all tables.
+-- 2. Ensuring foreign key consistency to maintain data integrity.
+-- 3. Analyzing order quantity distribution to detect potential anomalies.
+-- 4. Validating date and time formats to prevent inconsistencies in Power BI reports.
+-- 5. Verifying wheter dataset includes orders from the whole 2015
+
+### 1. Check for duplicate records in each table
+```sql
+SELECT Order_details_ID, COUNT(*) 
+FROM orderdetails 
+GROUP BY Order_details_ID 
+HAVING COUNT(*) > 1;
+
+SELECT Order_ID, COUNT(*) 
+FROM orders 
+GROUP BY Order_ID 
+HAVING COUNT(*) > 1;
+
+SELECT Pizza_type_ID, COUNT(*) 
+FROM pizzatypes 
+GROUP BY Pizza_type_ID 
+HAVING COUNT(*) > 1;
+
+SELECT Pizza_ID, COUNT(*) 
+FROM pizzas 
+GROUP BY Pizza_ID 
+HAVING COUNT(*) > 1;
+```
+### 2. Validate foreign key consistency
+
+```sql
+SELECT od.Order_ID 
+FROM orderdetails od 
+LEFT JOIN orders o ON od.Order_ID = o.Order_ID 
+WHERE o.Order_ID IS NULL; -- returns 0 rows
+
+SELECT p.Pizza_type_ID 
+FROM pizzas p 
+LEFT JOIN pizzatypes pt ON p.Pizza_type_ID = pt.Pizza_type_ID 
+WHERE pt.Pizza_type_ID IS NULL; -- returns 0 rows
+```
+### 3. Analyze distribution of order quantities
+
+```sql
+SELECT quantity, COUNT(*) AS count 
+FROM orderdetails 
+GROUP BY quantity 
+ORDER BY quantity;
+```
+
+### 4. Validate date and time formats
+
+```sql
+SELECT * FROM orders 
+WHERE date !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; -- Check if all dates are in YYYY-MM-DD format
+
+SELECT * FROM orders 
+WHERE time !~ '^[0-9]{2}:[0-9]{2}:[0-9]{2}$'; -- Check if all times are in HH:MM:SS format
+```
+### 5. Verification of max and min date and time in dataset
+
+```sql
+SELECT MIN(date) AS earliest_date, 
+		MAX(date) AS latest_date 
+FROM orders;
+
+SELECT MIN(time) AS earliest_time, 
+		MAX(time) AS latest_time 
+FROM orders;
+
+```
+
+
 	4. Evaluate unsolvable - N/D
 			i. Missing values
 			ii. Non logical dates
