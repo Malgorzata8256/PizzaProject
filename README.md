@@ -46,6 +46,55 @@ I created database through PgAdmin, created tables and imported all files (CSV) 
 	5. Augmentation - calendar table to add in PowerBI
 		a. Dodawanie np. kolumn albo dodatkowych tabel
 
+## Creating tables in PgAdmin
+```sql
+CREATE TABLE Orders
+		(
+order_id SERIAL PRIMARY KEY	,
+-- Unique identifier for each order placed by a table
+date	DATE,
+-- Date the order was placed (entered into the system prior to cooking & serving)
+time TIME
+-- Time the order was placed (entered into the system prior to cooking & serving)
+		);
+CREATE TABLE PizzaTypes
+		(
+pizza_type_id	VARCHAR(50) PRIMARY KEY,
+-- Unique identifier for each pizza type
+name	VARCHAR(50),
+-- Name of the pizza as shown in the menu
+category VARCHAR(50)	,
+-- Category that the pizza fall under in the menu (Classic, Chicken, Supreme, or Veggie)
+ingredients VARCHAR(150)
+-- Comma-delimited ingredients used in the pizza as shown in the menu (they all include Mozzarella Cheese, even if not specified  and they all include Tomato Sauce, unless another sauce is specified)
+		);
+CREATE TABLE Pizzas
+		(
+pizza_id	VARCHAR(50) PRIMARY KEY,
+-- Unique identifier for each pizza (constituted by its type and size)
+pizza_type_id	VARCHAR(50),
+-- Foreign key that ties each pizza to its broader pizza type
+size VARCHAR(50),
+-- Size of the pizza (Small, Medium, Large, X Large, or XX Large)
+price DECIMAL,
+-- Price of the pizza in USD
+FOREIGN KEY (pizza_type_id) REFERENCES PizzaTypes(pizza_type_id)
+		);
+CREATE TABLE OrderDetails 
+		(
+order_details_id INTEGER PRIMARY KEY	,
+-- Unique identifier for each pizza placed within each order (pizzas of the same type and size are kept in the same row, and the quantity increases)
+order_id	INTEGER,
+-- Foreign key that ties the details in each order to the order itself
+pizza_id	VARCHAR(50),
+-- Foreign key that ties the pizza ordered to its details, like size and price
+quantity INTEGER,
+-- Quantity ordered for each pizza of the same type and size
+FOREIGN KEY (order_id) REFERENCES Orders(order_id),
+FOREIGN KEY (pizza_id) REFERENCES Pizzas(pizza_id) 
+		);
+
+```
 
 SQL Queries
 
