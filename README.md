@@ -55,7 +55,7 @@ SELECT od.pizza_id,
 		od.quantity,
 		p.price,
 		od.quantity * p.price AS sales_value
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id ;
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id;
 ```
 
 ## verification which pizza size is the most popular (by number of order units) and % share
@@ -99,20 +99,26 @@ ORDER BY pizza_by_name DESC;
 ```sql
 WITH CTE AS
 		(
-		SELECT  distinct(pt.name),
-		pt.category,
-		SUM(od.quantity) OVER (PARTITION BY pt.name, pt.category) AS best_pizza_by_category
+		SELECT  pt.name,
+				pt.category,
+				SUM(od.quantity) OVER (PARTITION BY pt.name, pt.category) AS best_pizza_by_category
 		FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 			LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
-		ORDER BY best_pizza_by_category DESC
+		),
+
+	CTE2 AS
+		(
+		SELECT  name,
+				category, 
+				best_pizza_by_category,
+				DENSE_RANK() OVER (PARTITION BY category ORDER BY best_pizza_by_category DESC ) AS ranking_by_category
+		FROM CTE
 		)
-SELECT  name,
+SELECT DISTINCT(name),
 		category, 
-		best_pizza_by_category,
-		RANK() OVER (PARTITION BY category ORDER BY best_pizza_by_category DESC ) AS ranking_by_category
-FROM CTE
-ORDER BY ranking_by_category ASC
-LIMIT 4;
+		best_pizza_by_category
+FROM CTE2
+WHERE ranking_by_category =1;
 ```
 
 ## the best selling pizza in each size
@@ -120,19 +126,25 @@ LIMIT 4;
 WITH CTE AS
 		(
 		SELECT  distinct(pt.name),
-		p.size,
-		SUM(od.quantity) OVER (PARTITION BY pt.name, p.size) AS best_pizza_by_size
+				p.size,
+				SUM(od.quantity) OVER (PARTITION BY pt.name, p.size) AS best_pizza_by_size
 		FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
 			LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
-		ORDER BY best_pizza_by_size DESC
+		),
+	CTE2 AS 
+		(
+		SELECT  name,
+				size, 
+				best_pizza_by_size,
+		DENSE_RANK() OVER (PARTITION BY size ORDER BY best_pizza_by_size DESC ) AS ranking_by_size
+		FROM CTE
 		)
-SELECT  name,
+		
+SELECT  DISTINCT(name),
 		size, 
-		best_pizza_by_size,
-		RANK() OVER (PARTITION BY size ORDER BY best_pizza_by_size DESC ) AS ranking_by_size
-FROM CTE
-ORDER BY size, ranking_by_size ASC
-LIMIT 5;
+		best_pizza_by_size
+FROM CTE2
+WHERE ranking_by_size = 1;
 ```
 
 ##  daily sales
