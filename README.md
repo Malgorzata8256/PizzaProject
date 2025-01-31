@@ -1,6 +1,5 @@
 
 # PizzaProject
-
 --
 	1. Conceptualize the dataset
 		a. Identify grain, measures and dimensions
