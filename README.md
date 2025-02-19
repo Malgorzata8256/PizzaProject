@@ -174,60 +174,88 @@ FOREIGN KEY (pizza_id) REFERENCES Pizzas(pizza_id)
 
 SQL Queries
 
-## counting value of sold pizzas
+## Total sales value
 ```sql
-SELECT od.pizza_id,
-       od.quantity,
-       p.price,
-       od.quantity * p.price AS sales_value
-FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id;
+CREATE VIEW Total_Sales AS
+SELECT SUM(od.quantity * p.price) AS sales_value
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id
 ```
 
+## Sales value by pizza name
+```sql
+CREATE VIEW sales_value_by_pizza AS
+SELECT pt.name,
+       SUM(od.quantity * p.price) AS sales_value_by_pizza
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id
+	INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+GROUP BY pt.name
+```
+## Sales value by pizza category
+```sql
+CREATE VIEW sales_value_by_pizza_category AS
+SELECT pt.category,
+       SUM(od.quantity * p.price) AS sales_value_by_pizza_category
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id
+	INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+GROUP BY pt.category
+
+```
+## Sales value by pizza size
+```sql
+CREATE VIEW sales_value_by_pizza_size AS
+SELECT p.size,
+       SUM(od.quantity * p.price) AS sales_value_by_pizza_size
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id
+	INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+GROUP BY p.size
+
+```
 ## verification which pizza size is the most popular (by number of order units) and % share
 ```sql
-
+CREATE VIEW percentage_share_by_size AS
 SELECT p.size,
        SUM(od.quantity) AS pizza_by_size,
        ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_size
 FROM orderdetails od 
-LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
+INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
 GROUP BY p.size
 ORDER BY pizza_by_size DESC;
 ```
 
 ## verification which pizza category is the most popular (by number of order units) and % share
 ```sql
-
+CREATE VIEW percentage_share_by_category AS
 SELECT  pt.category,
         SUM(od.quantity) AS pizza_by_category,
         ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_category
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 GROUP BY pt.category
 ORDER BY pizza_by_category DESC;
 ```
 
 ## verification which pizza (name) is the most popular (by number of order units) and % share
 ```sql
-
+CREATE VIEW percentage_share_by_name AS
 SELECT  pt.name,
         SUM(od.quantity) AS pizza_by_name,
-        OUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_name
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+        ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_name
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 GROUP BY pt.name
 ORDER BY pizza_by_name DESC;
 ```
 
 ## the best selling pizza in each category
 ```sql
+CREATE VIEW best_selling_pizza_by_category AS
 WITH CTE AS
 		(
 		SELECT  pt.name,
 			pt.category,
 			SUM(od.quantity) OVER (PARTITION BY pt.name, pt.category) AS best_pizza_by_category
-		FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-			LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+		FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+			INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 		),
 
 	CTE2 AS
@@ -247,13 +275,14 @@ WHERE ranking_by_category =1;
 
 ## the best selling pizza in each size
 ```sql
+CREATE VIEW best_selling_pizza_by_size AS
 WITH CTE AS
 		(
 		SELECT  distinct(pt.name),
 			p.size,
-			SUM(od.quantity) OVER (PARTITION BY pt.name, p.size) AS best_pizza_by_size
-		FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-			LEFT JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
+			SUM(od.quantity) OVER (PARTITION BY pt.name, p.size) AS best_selling_pizza_by_size
+		FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+			INNER JOIN pizzatypes AS pt ON p.pizza_type_id = pt.pizza_type_id
 		),
 	CTE2 AS 
 		(
@@ -263,7 +292,6 @@ WITH CTE AS
 		DENSE_RANK() OVER (PARTITION BY size ORDER BY best_pizza_by_size DESC ) AS ranking_by_size
 		FROM CTE
 		)
-		
 SELECT  DISTINCT(name),
 	size,
 	best_pizza_by_size
@@ -273,18 +301,18 @@ WHERE ranking_by_size = 1;
 
 ##  daily sales
 ```sql
-
+CREATE VIEW daily_sales AS
 SELECT o.date, 
        SUM(od.quantity * p.price) AS daily_sales
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id
+	INNER JOIN orders o ON o.order_id = od.order_id
 GROUP BY o.date
 ORDER BY o.date;
 ```
 
-## seasonality check
+## seasonality check - day of week
 ```sql
-
+CREATE VIEW seasonality_day_of_week AS
 SELECT TO_CHAR(o.date, 'Day') AS day_of_week, 
        COUNT(*) AS order_count,
        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS percentage_share
@@ -295,120 +323,122 @@ ORDER BY order_count DESC;
 
 ## value of pizzas sold each month 
 ```sql
-
+CREATE VIEW seasonality_month AS
 SELECT DISTINCT (TO_CHAR (o.date, 'MM')) AS month,
 	SUM(od.quantity * p.price) OVER (PARTITION BY TO_CHAR (o.date, 'MM'))  AS sales_value_by_month
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 ORDER BY month ;
 ```
 
 ## value of pizzas by quarter
 ```sql
-
+CREATE VIEW seasonality_quarter AS
 SELECT DISTINCT (TO_CHAR (o.date, 'Q')) AS quarter,
 	SUM(od.quantity * p.price) OVER (PARTITION BY TO_CHAR (o.date, 'Q'))  AS sales_value_by_quarter
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 ORDER BY quarter ;
 ```
 
 ## number of pizzas ordered by time buckets (buckets to create)
 ```sql
-
+CREATE VIEW seasonality_time_of_day AS
 SELECT  CASE WHEN o.time BETWEEN '07:00:01' AND '12:00:00' THEN 'MORNING'
 		WHEN o.time BETWEEN '12:00:01' AND '18:00:00' THEN 'AFTERNOON'
 		WHEN o.time BETWEEN '18:00:01' AND '23:59:59' THEN 'EVENING'
 		ELSE 'OTHER' END AS time_buckets,
-	COUNT(od.quantity),
-	ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_share_by_bucket
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+	COUNT(od.quantity) pizzas_sold_by_time_buckets,
+	ROUND(SUM(od.quantity) * 100.0 / SUM(SUM(od.quantity)) OVER (),2) AS percentage_quantity_share_by_bucket,
+	SUM(od.quantity * p.price) sales_by_time_buckets,
+	ROUND(SUM(od.quantity * p.price) * 100.0 / SUM(SUM(od.quantity * p.price)) OVER (),2) AS percentage_sales_share_by_bucket
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 GROUP BY time_buckets;
 ```
 
 ## number of orders
 ```sql
-
+CREATE VIEW orders_quantity AS
 SELECT COUNT(*) AS orders_quantity
 FROM orderdetails;
 ```
 
 ## number of orders monthly
 ```sql
-
+CREATE VIEW number_of_pizzas_monthly AS
 SELECT DISTINCT (TO_CHAR (o.date, 'MM')) AS month,
 	SUM(od.quantity) OVER (PARTITION BY TO_CHAR (o.date, 'MM'))  AS number_of_pizzas_monthly
-FROM orderdetails od LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN orders o ON o.order_id = od.order_id
 ORDER BY month ;
 ```
 
 ## number of orders quaterly
 ```sql
-
+CREATE VIEW number_of_pizzas_quaterly AS
 SELECT DISTINCT (TO_CHAR (o.date, 'Q')) AS quarter,
 	SUM(od.quantity) OVER (PARTITION BY TO_CHAR (o.date, 'Q'))  AS number_of_pizzas_quaterly
-FROM orderdetails od LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN orders o ON o.order_id = od.order_id
 ORDER BY quarter ;
 ```
 
 ## AVG value of order
 ```sql
-
+CREATE VIEW AOV AS
 SELECT ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id;
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id;
 ```
 
 ## AVG order value by month
 ```sql
-
+CREATE VIEW AOV_monthly AS
 SELECT  TO_CHAR (o.date, 'MM') as month,
 	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_monthly
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 GROUP BY month
 ORDER BY month;
 ```
 
 ## AVG order value by quarter
 ```sql
-
+CREATE VIEW AOV_quaterly AS
 SELECT  TO_CHAR (o.date, 'Q') as quarter,
 	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_quaterly
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 GROUP BY quarter
 ORDER BY quarter;
 ```
 
 ## AVG order value by time bucket
 ```sql
-
+CREATE VIEW AOV_time_buckets AS
 SELECT  CASE WHEN o.time BETWEEN '07:00:01' AND '12:00:00' THEN 'MORNING'
 		WHEN o.time BETWEEN '12:00:01' AND '18:00:00' THEN 'AFTERNOON'
 		WHEN o.time BETWEEN '18:00:01' AND '23:59:59' THEN 'EVENING'
 		ELSE 'OTHER' END AS time_buckets,
 	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_time_buckets
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 GROUP BY time_buckets;
 ```
 
 ## AVG order value by hour
 ```sql
-
+CREATE VIEW AOV_hourly AS
 SELECT  EXTRACT(HOUR FROM o.time) as hour,
 	ROUND (SUM(od.quantity * p.price) / COUNT (od.quantity),2) AS AOV_hourly
-FROM orderdetails od LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id 
-	LEFT JOIN orders o ON o.order_id = od.order_id
+FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+	INNER JOIN orders o ON o.order_id = od.order_id
 GROUP BY hour
 ORDER BY hour;
 ```
 
 ## avg number of pizzas in order
 ```sql
-
+CREATE VIEW order_size AS
 SELECT ROUND(AVG(order_size),2)
 FROM
 		(
@@ -418,10 +448,27 @@ FROM
 		 GROUP BY order_id
 		) AS sub;
 ```
-
+## Order size and number of orders by hour
+```sql
+CREATE VIEW order_size_and_nr_of_orders_by_hour AS
+SELECT 	hour,
+		ROUND(AVG(order_size),2) avg_number_of_pizzas_in_order,
+		COUNT(order_id) AS number_of_orders_by_hour
+FROM
+		(
+		SELECT o.order_id,
+			EXTRACT(HOUR FROM o.time) as hour,
+			SUM(od.quantity) AS order_size
+		 FROM orderdetails od INNER JOIN pizzas p ON od.pizza_id = p.pizza_id 
+		 INNER JOIN orders o ON o.order_id = od.order_id
+		 GROUP BY o.order_id, hour
+		) AS sub
+GROUP BY hour
+ORDER BY hour
+```
 ## pizzas combinations
 ```sql
-
+CREATE VIEW pizza_combinations_popularity AS
 SELECT a.pizza_id AS pizza_1, 
        b.pizza_id AS pizza_2, 
        COUNT(*) AS pair_count
@@ -434,9 +481,9 @@ LIMIT 10;
 
 ## the biggest orders
 ```sql
-
+CREATE VIEW the_biggest_orders AS
 SELECT od.order_id, 
-       SUM(od.quantity * p.price) AS order_value
+       SUM(od.quantity * p.price) AS order_value_biggest
 FROM orderdetails od 
 LEFT JOIN pizzas p ON od.pizza_id = p.pizza_id
 GROUP BY od.order_id
@@ -446,7 +493,7 @@ LIMIT 10;
 
 ## ingredients popularity
 ```sql
-
+CREATE VIEW ingredients_popularity AS
 SELECT TRIM(UNNEST(STRING_TO_ARRAY(ingredients, ','))) AS ingredient, 
        COUNT(*) AS count
 FROM pizzatypes
